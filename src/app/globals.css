@@ -1,0 +1,143 @@
+@import "tailwindcss";
+
+:root {
+  /* Primary Palette - Dark Navy */
+  --color-primary-900: #1a1d26;
+  --color-primary-800: #2D3142;
+  --color-primary-700: #3d4156;
+  --color-primary-600: #4d526a;
+  --color-primary-500: #5d637e;
+  --color-primary-200: #9ca1b3;
+  --color-primary-100: #c5c8d4;
+  --color-primary-50: #ecedf1;
+
+  /* Accent Palette - Coral Orange */
+  --color-accent-600: #d96a3f;
+  --color-accent-500: #EF8354;
+  --color-accent-400: #f29b73;
+  --color-accent-300: #f5b392;
+  --color-accent-200: #f8cbb1;
+  --color-accent-100: #fce3d0;
+  --color-accent-50: #fef6f1;
+
+  /* Semantic Colors */
+  --background: #f8f9fa;
+  --foreground: #2D3142;
+  --muted: #ecedf1;
+  --muted-foreground: #5d637e;
+  --accent: #EF8354;
+  --accent-foreground: #ffffff;
+  --destructive: #dc3545;
+  --success: #28a745;
+  --warning: #ffc107;
+
+  /* Component Colors */
+  --border: #c5c8d4;
+  --ring: #EF8354;
+  --input-border: #c5c8d4;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  /* Custom palette colors for Tailwind */
+  --color-brand-50: #fef6f1;
+  --color-brand-100: #fce3d0;
+  --color-brand-500: #EF8354;
+  --color-brand-600: #d96a3f;
+  --color-brand-900: #2D3142;
+
+  --color-slate-50: #f8f9fa;
+  --color-slate-100: #ecedf1;
+
+  --color-coral: #EF8354;
+  --color-coral-dark: #d96a3f;
+  --color-navy: #2D3142;
+  --color-navy-light: #4d526a;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #1a1d26;
+    --foreground: #ecedf1;
+    --muted: #2D3142;
+    --muted-foreground: #9ca1b3;
+    --border: #3d4156;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Global Button Styles with Hover Effects */
+button {
+  transition: all 0.2s ease-in-out;
+}
+
+button:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+
+button:not(:disabled):active {
+  transform: translateY(0);
+}
+
+/* Primary button hover */
+.btn-primary {
+  @apply bg-[#0a9396] text-white px-4 py-2 rounded-lg font-medium;
+  @apply hover:bg-[#006073] hover:shadow-md;
+  @apply disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none;
+  transition: all 0.2s ease-in-out;
+}
+
+/* Secondary button hover */
+.btn-secondary {
+  @apply bg-white text-[#006073] border border-[#94d2bd] px-4 py-2 rounded-lg font-medium;
+  @apply hover:bg-[#94d2bd]/20 hover:border-[#0a9396];
+  @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  transition: all 0.2s ease-in-out;
+}
+
+/* Danger button hover */
+.btn-danger {
+  @apply bg-[#9d2227] text-white px-4 py-2 rounded-lg font-medium;
+  @apply hover:bg-[#b02013] hover:shadow-md;
+  @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  transition: all 0.2s ease-in-out;
+}
+
+/* Ghost button hover */
+.btn-ghost {
+  @apply text-[#006073] px-4 py-2 rounded-lg font-medium;
+  @apply hover:bg-[#ead7a5]/50;
+  @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  transition: all 0.2s ease-in-out;
+}
+
+/* Card hover effect */
+.card-hover {
+  transition: all 0.2s ease-in-out;
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Link hover effect */
+a:not(.no-hover):hover {
+  opacity: 0.8;
+}
+
+/* Input focus effect */
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--ring);
+  box-shadow: 0 0 0 2px rgba(10, 147, 150, 0.2);
+}
