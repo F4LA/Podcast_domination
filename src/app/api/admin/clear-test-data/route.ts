@@ -1,28 +1,46 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { db } from "@/lib/db";
+import { syncCampaigns } from "@/lib/campaigns-storage";
 
 /**
- * Clear old test data from the Touch table
- * This resets the analytics to start fresh
+ * Clear all test/demo data
+ * This resets the app to a clean state
  */
 export async function POST(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url);
+    const clearCampaigns = searchParams.get("campaigns") !== "false";
+    const clearTouches = searchParams.get("touches") !== "false";
+
+    let deletedTouches = 0;
+    let deletedCampaigns = false;
+
     // Delete all Touch records (sent email tracking)
-    const deletedTouches = await prisma.touch.deleteMany({});
-    
-    console.log(`[Admin] Cleared ${deletedTouches.count} Touch records`);
+    if (clearTouches) {
+      const result = await db.touch.deleteMany({});
+      deletedTouches = result.count;
+      console.log(`[Admin] Cleared ${deletedTouches} Touch records`);
+    }
+
+    // Clear campaigns from KeyValueStore
+    if (clearCampaigns) {
+      await syncCampaigns([]);
+      deletedCampaigns = true;
+      console.log(`[Admin] Cleared all campaigns`);
+    }
 
     return NextResponse.json({
       success: true,
-      message: "Test data cleared successfully",
+      message: "Data cleared successfully",
       deleted: {
-        touches: deletedTouches.count,
+        touches: deletedTouches,
+        campaigns: deletedCampaigns,
       },
     });
   } catch (error) {
-    console.error("[Admin] Error clearing test data:", error);
+    console.error("[Admin] Error clearing data:", error);
     return NextResponse.json(
-      { error: "Failed to clear test data" },
+      { error: "Failed to clear data" },
       { status: 500 }
     );
   }
@@ -31,7 +49,7 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   try {
     // Just count what would be deleted
-    const touchCount = await prisma.touch.count();
+    const touchCount = await db.touch.count();
     
     return NextResponse.json({
       touches: touchCount,
