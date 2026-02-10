@@ -5,23 +5,38 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Mic2, Mail, Lock } from "lucide-react";
+import { Mic2, Lock } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError("");
 
-    // TODO: Implement actual authentication
-    // For now, just redirect to dashboard
-    setTimeout(() => {
-      router.push("/");
-    }, 1000);
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+
+      if (response.ok) {
+        router.push("/");
+        router.refresh();
+      } else {
+        const data = await response.json();
+        setError(data.error || "Invalid password");
+      }
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -33,28 +48,13 @@ export default function LoginPage() {
               <Mic2 className="h-6 w-6 text-white" />
             </div>
           </div>
-          <CardTitle className="text-2xl">Welcome back</CardTitle>
+          <CardTitle className="text-2xl">Podcast Outreach</CardTitle>
           <CardDescription>
-            Sign in to your Podcast Outreach account
+            Enter your password to continue
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="text-sm font-medium text-gray-700">Email</label>
-              <div className="relative mt-1">
-                <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-600" />
-                <Input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  className="pl-10"
-                  required
-                />
-              </div>
-            </div>
-
             <div>
               <label className="text-sm font-medium text-gray-700">
                 Password
@@ -67,19 +67,20 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
                   className="pl-10"
+                  autoFocus
                   required
                 />
               </div>
             </div>
 
+            {error && (
+              <p className="text-sm text-red-600 text-center">{error}</p>
+            )}
+
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "Signing in..." : "Sign in"}
             </Button>
           </form>
-
-          <div className="mt-6 text-center text-sm text-gray-700">
-            <p>Demo credentials: any email/password works</p>
-          </div>
         </CardContent>
       </Card>
     </div>
