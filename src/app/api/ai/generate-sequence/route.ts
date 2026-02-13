@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
+import { aiComplete } from "@/lib/ai";
 import { z } from "zod";
-
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
 
 const generateSequenceSchema = z.object({
   podcastId: z.string(),
@@ -114,26 +110,11 @@ ${followUpSchedule ? `FOLLOW-UP SCHEDULE:\n${followUpSchedule}` : ""}
 
 Generate all 4 emails now. Remember to output ONLY valid JSON.`;
 
-    const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 2048,
-      messages: [
-        {
-          role: "user",
-          content: userContent,
-        },
-      ],
-      system: systemPrompt,
-    });
-
-    // Extract JSON from response
-    const textContent = response.content.find((c) => c.type === "text");
-    if (!textContent || textContent.type !== "text") {
-      throw new Error("No text response from AI");
-    }
+    // Call AI (uses whichever provider is configured - OpenAI or Anthropic)
+    const responseText = await aiComplete(systemPrompt, userContent, { maxTokens: 2048 });
 
     // Parse JSON from response
-    const jsonMatch = textContent.text.match(/\{[\s\S]*\}/);
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       throw new Error("No JSON found in response");
     }

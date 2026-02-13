@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import Anthropic from "@anthropic-ai/sdk";
+import { aiComplete } from "@/lib/ai";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60; // Allow up to 60 seconds for AI analysis
@@ -107,14 +107,6 @@ export async function POST(
   try {
     const { id } = await params;
 
-    // Check for Anthropic API key
-    if (!process.env.ANTHROPIC_API_KEY) {
-      return NextResponse.json(
-        { error: "ANTHROPIC_API_KEY not configured" },
-        { status: 500 }
-      );
-    }
-
     // Fetch the podcast
     const podcast = await db.podcast.findUnique({
       where: { id },
@@ -131,26 +123,8 @@ export async function POST(
     const systemPrompt = buildSystemPrompt();
     const userPrompt = buildUserPrompt(podcast, evidenceContext);
 
-    // Call Claude API
-    const anthropic = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY,
-    });
-
-    const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 2048,
-      messages: [
-        {
-          role: "user",
-          content: userPrompt,
-        },
-      ],
-      system: systemPrompt,
-    });
-
-    // Parse the AI response
-    const responseText =
-      message.content[0].type === "text" ? message.content[0].text : "";
+    // Call AI (uses whichever provider is configured - OpenAI or Anthropic)
+    const responseText = await aiComplete(systemPrompt, userPrompt, { maxTokens: 2048 });
 
     let analysis: AnalysisResult;
     try {

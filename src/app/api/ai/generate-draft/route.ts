@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import Anthropic from "@anthropic-ai/sdk";
+import { aiComplete } from "@/lib/ai";
 import { z } from "zod";
 import { CLAIM_RULES } from "@/lib/constants";
 import { withRateLimit } from "@/lib/rate-limiter";
-import { getSetting } from "@/lib/settings";
 
 const generateSchema = z.object({
   podcastId: z.string(),
@@ -18,16 +17,6 @@ export async function POST(request: NextRequest) {
   if (rateLimitResponse) return rateLimitResponse;
 
   try {
-    // Get API key from settings (database) or fallback to env
-    const apiKey = await getSetting("ANTHROPIC_API_KEY");
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: "Anthropic API key not configured" },
-        { status: 500 }
-      );
-    }
-    
-    const anthropic = new Anthropic({ apiKey });
     const body = await request.json();
     const { podcastId, leadMagnetId } = generateSchema.parse(body);
 
@@ -123,26 +112,11 @@ Format as JSON:
   "followUp": "..."
 }`;
 
-    const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1024,
-      messages: [
-        {
-          role: "user",
-          content: userContent,
-        },
-      ],
-      system: systemPrompt,
-    });
-
-    // Extract JSON from response
-    const textContent = response.content.find((c) => c.type === "text");
-    if (!textContent || textContent.type !== "text") {
-      throw new Error("No text response from AI");
-    }
+    // Call AI (uses whichever provider is configured - OpenAI or Anthropic)
+    const responseText = await aiComplete(systemPrompt, userContent, { maxTokens: 1024 });
 
     // Parse JSON from response
-    const jsonMatch = textContent.text.match(/\{[\s\S]*\}/);
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       throw new Error("No JSON found in response");
     }

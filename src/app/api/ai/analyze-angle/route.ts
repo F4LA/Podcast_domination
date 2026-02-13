@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import Anthropic from "@anthropic-ai/sdk";
+import { aiComplete } from "@/lib/ai";
 import { z } from "zod";
 
 // Define types locally to avoid Prisma client dependency issues
@@ -15,10 +15,6 @@ type Angle =
   | "BODY_RECOMPOSITION";
 
 type Tier = "PENDING" | "TIER_1" | "TIER_2" | "TIER_3";
-
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
 
 const analyzeSchema = z.object({
   podcastId: z.string(),
@@ -102,26 +98,11 @@ ${hasTranscript ? `\nTranscript excerpt (for Tier 1 analysis):\n${podcast.transc
 
 Provide your analysis in JSON format.`;
 
-    const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1024,
-      messages: [
-        {
-          role: "user",
-          content: userContent,
-        },
-      ],
-      system: systemPrompt,
-    });
-
-    // Extract JSON from response
-    const textContent = response.content.find((c) => c.type === "text");
-    if (!textContent || textContent.type !== "text") {
-      throw new Error("No text response from AI");
-    }
+    // Call AI (uses whichever provider is configured - OpenAI or Anthropic)
+    const responseText = await aiComplete(systemPrompt, userContent, { maxTokens: 1024 });
 
     // Parse JSON from response
-    const jsonMatch = textContent.text.match(/\{[\s\S]*\}/);
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       throw new Error("No JSON found in response");
     }
