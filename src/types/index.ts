@@ -206,7 +206,7 @@ export type TouchWithPodcast = Touch & {
 
 // API request/response types
 export interface DiscoveryRequest {
-  type: "seed_guest" | "category";
+  type: "seed_guest" | "category" | "guest_appearances";
   query: string;
   category?: string; // Optional category for seed_guest searches
   limit?: number;

@@ -18,7 +18,7 @@ import {
 import { Search, Plus, Loader2, ExternalLink, Check, Users, Folder, AlertCircle, X, Mic, Calendar, Tag, Sparkles, TrendingUp, Star, Trash2 } from "lucide-react";
 import type { DiscoveryResult } from "@/types";
 
-type SearchType = "seed_guest" | "category" | "best_match" | "momentum";
+type SearchType = "seed_guest" | "category" | "guest_appearances" | "best_match" | "momentum";
 
 interface QuickCategory {
   id: string;
@@ -131,6 +131,14 @@ export default function DiscoveryPage() {
           searchTerms,
         });
         setResults(data.results.map((r) => ({ ...r, imported: false })));
+      } else if (searchType === "guest_appearances") {
+        // Guest appearances: find podcasts where a person appeared as guest
+        const data = await discovery.mutateAsync({
+          type: "guest_appearances",
+          query,
+          limit: 50,
+        });
+        setResults(data.results.map((r) => ({ ...r, imported: false })));
       } else if (searchType === "seed_guest") {
         // Seed guest search with optional categories (comma-separated)
         const categories = seedCategory.split(",").map((c) => c.trim()).filter(Boolean).join(", ");
@@ -138,7 +146,7 @@ export default function DiscoveryPage() {
           type: "seed_guest",
           query,
           category: categories || undefined,
-          limit: 20,
+          limit: 50,
         });
         setResults(data.results.map((r) => ({ ...r, imported: false })));
       } else {
@@ -146,7 +154,7 @@ export default function DiscoveryPage() {
         const data = await discovery.mutateAsync({
           type: "category",
           query,
-          limit: 20,
+          limit: 50,
         });
         setResults(data.results.map((r) => ({ ...r, imported: false })));
       }
@@ -235,6 +243,12 @@ export default function DiscoveryPage() {
               <SelectContent>
                 <SelectGroup>
                   <SelectLabel>Manual Search</SelectLabel>
+                  <SelectItem value="guest_appearances">
+                    <div className="flex items-center gap-2">
+                      <Search className="h-4 w-4" />
+                      Find Guest Appearances
+                    </div>
+                  </SelectItem>
                   <SelectItem value="seed_guest">
                     <div className="flex items-center gap-2">
                       <Users className="h-4 w-4" />
@@ -266,6 +280,18 @@ export default function DiscoveryPage() {
               </SelectContent>
             </Select>
 
+            {/* Guest Appearances: Single name input */}
+            {searchType === "guest_appearances" && (
+              <div className="flex-1 min-w-[200px]">
+                <Input
+                  placeholder="Person's name (e.g., Tim Ferriss, Andrew Huberman)..."
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                />
+              </div>
+            )}
+
             {/* Seed Guest: Two inputs - guest name and categories (stacked) */}
             {searchType === "seed_guest" && (
               <div className="flex-1 min-w-[200px] space-y-2">
@@ -285,7 +311,7 @@ export default function DiscoveryPage() {
             )}
 
             {/* Other search types: Single input */}
-            {searchType !== "seed_guest" && (
+            {searchType !== "seed_guest" && searchType !== "guest_appearances" && (
               <div className="flex-1 min-w-[200px]">
                 <Input
                   placeholder={
@@ -483,6 +509,19 @@ export default function DiscoveryPage() {
             </div>
           )}
 
+          {/* Guest Appearances info */}
+          {searchType === "guest_appearances" && (
+            <div className="mt-4 p-3 bg-purple-50 rounded-lg border border-purple-200">
+              <p className="text-sm text-purple-800">
+                <strong>Find Guest Appearances:</strong> Search for a person by name to find podcasts where they&apos;ve appeared as a guest.
+                This searches episode titles across Apple Podcasts and PodcastIndex to find actual guest appearances.
+              </p>
+              <p className="text-xs text-purple-600 mt-1">
+                Tip: Use full names for best results (e.g., &quot;Andrew Huberman&quot; instead of just &quot;Huberman&quot;)
+              </p>
+            </div>
+          )}
+
           {/* Best Match info */}
           {searchType === "best_match" && (
             <div className="mt-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
@@ -530,7 +569,7 @@ export default function DiscoveryPage() {
                 )}
               </>
             ) : (
-              `Found ${results.length} podcasts from Apple Podcasts`
+              `Found ${results.length} podcasts`
             )}
           </p>
         </div>
@@ -731,8 +770,10 @@ export default function DiscoveryPage() {
                 Search for podcasts
               </h3>
               <p className="text-gray-700">
-                {searchType === "seed_guest"
-                  ? "Enter a seed guest name to find podcasts they've appeared on"
+                {searchType === "guest_appearances"
+                  ? "Enter a person's name to find podcasts they've appeared on as a guest"
+                  : searchType === "seed_guest"
+                  ? "Enter a seed guest name and categories to find relevant podcasts"
                   : "Enter a category or topic to find relevant podcasts"}
               </p>
             </>
