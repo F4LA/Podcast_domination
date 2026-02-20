@@ -162,7 +162,7 @@ async function searchAppleEpisodes(personName: string, limit: number) {
         riskSignals: detectRiskSignals(item as any),
         artworkUrl: item.artworkUrl600 || item.artworkUrl100 || null,
         genre: item.primaryGenreName || null,
-        genres: item.genres || [],
+        genres: (item.genres || []).map(g => typeof g === "string" ? g : (g as any).name || ""),
         episodeCount: item.trackCount || 0,
         lastReleaseDate: item.releaseDate || null,
         country: null,
@@ -376,7 +376,10 @@ async function searchSpotify(query: string, limit: number) {
 
 function detectRiskSignals(item: ApplePodcastResult): string[] {
   const signals: string[] = [];
-  const genres = (item.genres || []).map(g => g.toLowerCase());
+  const rawGenres = item.genres || [];
+  const genres = rawGenres.map(g =>
+    (typeof g === "string" ? g : (g as any).name || "").toLowerCase()
+  );
 
   if (item.contentAdvisoryRating === "Explicit") {
     signals.push("EXPLICIT_CONTENT");

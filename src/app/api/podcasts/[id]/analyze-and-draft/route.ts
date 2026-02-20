@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import Anthropic from "@anthropic-ai/sdk";
+import { aiComplete, getAvailableProvider } from "@/lib/ai";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -124,9 +124,10 @@ export async function POST(
   try {
     const { id } = await params;
 
-    if (!process.env.ANTHROPIC_API_KEY) {
+    const provider = await getAvailableProvider();
+    if (!provider) {
       return NextResponse.json(
-        { error: "ANTHROPIC_API_KEY not configured" },
+        { error: "No AI API key configured. Please add either OPENAI_API_KEY or ANTHROPIC_API_KEY in Settings." },
         { status: 500 }
       );
     }
@@ -145,7 +146,6 @@ export async function POST(
 
     // If no criteria exist, seed defaults first
     if (criteria.length === 0) {
-      // Trigger the criteria endpoint to seed defaults
       await fetch(new URL("/api/settings/criteria", request.url).toString());
       criteria = await db.podcastCriteria.findMany({
         where: { isEnabled: true },
@@ -157,16 +157,7 @@ export async function POST(
     const context = buildContext(podcast);
     const systemPrompt = buildSystemPrompt(criteria);
 
-    // Call Claude
-    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-    const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 2048,
-      system: systemPrompt,
-      messages: [{ role: "user", content: context }],
-    });
-
-    const responseText = message.content[0].type === "text" ? message.content[0].text : "";
+    const responseText = await aiComplete(systemPrompt, context, { maxTokens: 2048 });
 
     let analysis;
     try {
